@@ -1,4 +1,4 @@
-# AN EXAMPLE RABBITMQ MULTITHREAD CONSUMER RABBITMQ
+# AN EXAMPLE RABBITMQ MULTITHREAD CONSUMER
 This repo assume a consumer that will consume messages from a queue and the worker will process them in a multithread way.
 
 After the job is complete, the consumer send an ack message back to RabbitMQ.
