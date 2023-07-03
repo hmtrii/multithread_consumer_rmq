@@ -32,21 +32,6 @@ class Consumner:
     def connection(self):
         return pika.BlockingConnection(self.connection_params)
 
-    # @property
-    # def channel(self):
-    #     channel = self.connection.channel()
-    #     channel.exchange_declare(
-    #         exchange=self._exchange_name,
-    #         exchange_type=ExchangeType.topic,
-    #     )
-    #     channel.queue_declare(queue="", exclusive=True)
-    #     channel.queue_bind(
-    #         queue="",
-    #         exchange=self._exchange_name, 
-    #         routing_key=self._routing_key)
-    #     channel.basic_qos(prefetch_count=self._num_threads)
-    #     return channel
-
     def do_work(self, ch, delivery_tag, body):
         thread_id = threading.get_ident()
         print("Thread id: {} Delivery tag: {} Message body: {}".format(thread_id,
