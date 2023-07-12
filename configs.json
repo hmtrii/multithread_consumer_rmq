@@ -4,6 +4,7 @@
     "rmq_username": "guest",
     "rmq_password": "guest",
     "exchange_name": "topic_job",
+    "queue_name": "queue_1",
     "routing_key": "test.threaded_consumer",
     "num_threads": 5
 }

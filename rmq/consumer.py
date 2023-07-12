@@ -7,12 +7,13 @@ from pika.exchange_type import ExchangeType
 
 class Consumner:
 
-    def __init__(self, rmq_host, rmq_port, rmq_username, rmq_password, exchange_name, routing_key, num_threads, job):
+    def __init__(self, rmq_host, rmq_port, rmq_username, rmq_password, exchange_name, queue_name, routing_key, num_threads, job):
         self._rmq_host = rmq_host
         self._rmq_port = rmq_port
         self._rmq_username = rmq_username
         self._rmq_password = rmq_password
         self._exchange_name = exchange_name
+        self._queue_name = queue_name
         self._routing_key = routing_key
         self._num_threads = num_threads
         self._job = job
@@ -63,28 +64,44 @@ class Consumner:
             pass
     
     def run(self):
-        threads = []
-        on_message_callback = functools.partial(self.on_message, args=(threads))
-        channel = self.connection.channel()
-        channel.exchange_declare(
-            exchange=self._exchange_name,
-            exchange_type=ExchangeType.topic,
-        )
-        channel.queue_declare(queue="", exclusive=True)
-        channel.queue_bind(
-            queue="",
-            exchange=self._exchange_name, 
-            routing_key=self._routing_key)
-        channel.basic_qos(prefetch_count=self._num_threads)
-        channel.basic_consume(on_message_callback=on_message_callback, queue="")
+        while True:
+            try:
+                threads = []
+                on_message_callback = functools.partial(self.on_message, args=(threads))
+                channel = self.connection.channel()
+                channel.exchange_declare(
+                    exchange=self._exchange_name,
+                    exchange_type=ExchangeType.topic,
+                )
+                channel.queue_declare(queue=self._queue_name, exclusive=False)
+                channel.queue_bind(
+                    queue=self._queue_name,
+                    exchange=self._exchange_name, 
+                    routing_key=self._routing_key)
+                channel.basic_qos(prefetch_count=self._num_threads)
+                channel.basic_consume(on_message_callback=on_message_callback, queue="")
 
-        try:
-            channel.start_consuming()
-        except KeyboardInterrupt:
-            channel.stop_consuming()
+                try:
+                    channel.start_consuming()
+                except KeyboardInterrupt:
+                    channel.stop_consuming()
 
-        for thread in threads:
-            thread.join()
+                for thread in threads:
+                    thread.join()
 
-        self.connection.close()
-    
+                self.connection.close()
+            except pika.exceptions.ConnectionClosedByBroker:
+                # Uncomment this to make the example not attempt recovery
+                # from server-initiated connection closure, including
+                # when the node is stopped cleanly
+                #
+                # break
+                continue
+            # Do not recover on channel errors
+            except pika.exceptions.AMQPChannelError as err:
+                print("Caught a channel error: {}, stopping...".format(err))
+                break
+            # Recover on all other connection errors
+            except pika.exceptions.AMQPConnectionError:
+                print("Connection was closed, retrying...")
+                continue

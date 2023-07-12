@@ -22,6 +22,7 @@ class Controller:
             self._configs['rmq_username'],
             self._configs['rmq_password'],
             self._configs['exchange_name'],
+            self._configs['queue_name'],
             self._configs['routing_key'],
             self._configs['num_threads'], 
             self._worker.work
