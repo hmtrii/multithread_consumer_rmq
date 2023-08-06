@@ -42,12 +42,10 @@ class Consumner:
         cb = functools.partial(self.ack_message, ch, delivery_tag)
         ch.connection.add_callback_threadsafe(cb)
     
-    def on_message(self, ch, method_frame, _header_frame, body, args):
-        thrds = args
+    def on_message(self, ch, method_frame, _header_frame, body):
         delivery_tag = method_frame.delivery_tag
         t = threading.Thread(target=self.do_work, args=(ch, delivery_tag, body))
         t.start()
-        thrds.append(t)
     
     def ack_message(self, ch, delivery_tag):
         """Note that `ch` must be the same pika channel instance via which
@@ -66,8 +64,7 @@ class Consumner:
     def run(self):
         while True:
             try:
-                threads = []
-                on_message_callback = functools.partial(self.on_message, args=(threads))
+                on_message_callback = functools.partial(self.on_message)
                 channel = self.connection.channel()
                 channel.exchange_declare(
                     exchange=self._exchange_name,
@@ -85,9 +82,6 @@ class Consumner:
                     channel.start_consuming()
                 except KeyboardInterrupt:
                     channel.stop_consuming()
-
-                for thread in threads:
-                    thread.join()
 
                 self.connection.close()
             except pika.exceptions.ConnectionClosedByBroker:
